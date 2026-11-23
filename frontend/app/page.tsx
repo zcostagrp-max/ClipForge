@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
+// Demo clips with same-origin videos (no CORS issues)
 const DEMO_CLIPS = [
   {
     id: 'demo-1',
@@ -12,8 +13,8 @@ const DEMO_CLIPS = [
     transcript: 'The real reason isn\'t what you think. Most people focus on the wrong things and miss the leverage points that actually move the needle.',
     start: 124,
     end: 167,
-    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    thumbnail_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg',
+    video_url: '/clips/clip1.mp4',
+    thumbnail_url: '',
   },
   {
     id: 'demo-2',
@@ -22,8 +23,8 @@ const DEMO_CLIPS = [
     transcript: 'Here\'s what actually works when everyone else is doing the opposite. This one shift changes the entire outcome.',
     start: 312,
     end: 348,
-    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    thumbnail_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg',
+    video_url: '/clips/clip2.mp4',
+    thumbnail_url: '',
   },
   {
     id: 'demo-3',
@@ -32,8 +33,8 @@ const DEMO_CLIPS = [
     transcript: 'I tried this for 30 days and the results were insane. Most people quit before they see the compounding effect.',
     start: 45,
     end: 89,
-    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    thumbnail_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg',
+    video_url: '/clips/clip3.mp4',
+    thumbnail_url: '',
   },
 ];
 
@@ -62,9 +63,10 @@ function ClipCard({ clip, apiBase }: { clip: any; apiBase: string }) {
     if (!videoSrc) return;
     const a = document.createElement('a');
     a.href = videoSrc;
-    a.download = `${clip.title?.slice(0, 30) || 'clip'}.mp4`;
-    a.target = '_blank';
+    a.download = `${(clip.title || 'clip').slice(0, 40)}.mp4`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
   };
 
   return (
