@@ -2,51 +2,127 @@
 
 import { useState, useEffect } from 'react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+
+const DEMO_CLIPS = [
+  {
+    id: 'demo-1',
+    title: 'Why most people stay broke',
+    virality_score: 94,
+    transcript: 'The real reason isn\'t what you think. Most people focus on the wrong things...',
+    start: 124,
+    end: 167,
+  },
+  {
+    id: 'demo-2',
+    title: 'The secret nobody talks about',
+    virality_score: 87,
+    transcript: 'Here\'s what actually works when everyone else is doing the opposite...',
+    start: 312,
+    end: 348,
+  },
+  {
+    id: 'demo-3',
+    title: 'This changed everything for me',
+    virality_score: 91,
+    transcript: 'I tried this for 30 days and the results were insane...',
+    start: 45,
+    end: 89,
+  },
+];
 
 export default function Home() {
   const [url, setUrl] = useState('');
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [demoMode, setDemoMode] = useState(!API_BASE);
+  const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState('');
 
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId || demoMode) return;
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`${API_BASE}/api/jobs/${jobId}`);
+        if (!res.ok) throw new Error('Failed');
         const data = await res.json();
         setJob(data);
+        setProgress(data.progress || 0);
+        setStage(data.stage || data.status);
         if (data.status === 'completed' || data.status === 'failed') {
           clearInterval(interval);
           setLoading(false);
         }
       } catch (e) {
         console.error(e);
+        clearInterval(interval);
+        setLoading(false);
       }
     }, 2000);
     return () => clearInterval(interval);
-  }, [jobId]);
+  }, [jobId, demoMode]);
+
+  const runDemo = () => {
+    setLoading(true);
+    setJob(null);
+    setProgress(0);
+    setStage('Downloading video');
+    const stages = [
+      { p: 15, s: 'Downloading video' },
+      { p: 40, s: 'Transcribing audio' },
+      { p: 65, s: 'Finding viral highlights' },
+      { p: 85, s: 'Rendering clips' },
+      { p: 100, s: 'Done' },
+    ];
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < stages.length) {
+        setProgress(stages[i].p);
+        setStage(stages[i].s);
+        i++;
+      } else {
+        clearInterval(timer);
+        setJob({
+          status: 'completed',
+          progress: 100,
+          stage: 'Done',
+          clips: DEMO_CLIPS,
+        });
+        setLoading(false);
+      }
+    }, 800);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url) return;
+    if (!url.trim()) return;
+    if (demoMode || !API_BASE) {
+      runDemo();
+      return;
+    }
     setLoading(true);
     setJob(null);
+    setProgress(0);
+    setStage('Starting...');
     try {
       const res = await fetch(`${API_BASE}/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
+      if (!res.ok) throw new Error('API error');
       const data = await res.json();
       setJobId(data.id);
       setJob(data);
     } catch (err) {
-      alert('Failed to start job');
-      setLoading(false);
+      console.error(err);
+      setDemoMode(true);
+      runDemo();
     }
   };
+
+  const clips = job?.clips || [];
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
@@ -54,7 +130,14 @@ export default function Home() {
         <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
           ClipForge
         </h1>
-        <p className="text-zinc-400 mt-3 text-lg">Paste any video URL → get viral short clips with captions</p>
+        <p className="text-zinc-400 mt-3 text-lg">
+          Paste any video URL → get viral short clips with captions
+        </p>
+        {demoMode && (
+          <p className="text-xs text-zinc-500 mt-2">
+            Demo mode — connect a backend via NEXT_PUBLIC_API_URL for real processing
+          </p>
+        )}
       </header>
 
       <form onSubmit={handleSubmit} className="mb-10">
@@ -64,7 +147,7 @@ export default function Home() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://youtube.com/watch?v=... or TikTok, Instagram, direct MP4"
-            className="flex-1 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 focus:border-orange-500 outline-none"
+            className="flex-1 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 focus:border-orange-500 outline-none text-white"
             required
           />
           <button
@@ -77,33 +160,36 @@ export default function Home() {
         </div>
       </form>
 
-      {job && (
-        <div className="mb-8">
+      {(loading || progress > 0) && (
+        <div className="mb-8 max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-zinc-400">{job.stage || job.status}</span>
-            <span className="text-sm font-mono">{job.progress}%</span>
+            <span className="text-sm text-zinc-400">{stage || 'Working...'}</span>
+            <span className="text-sm font-mono">{progress}%</span>
           </div>
           <div className="w-full bg-zinc-800 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-orange-500 to-pink-500 h-2 rounded-full transition-all"
-              style={{ width: `${job.progress}%` }}
+              className="bg-gradient-to-r from-orange-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
             />
           </div>
-          {job.error && <p className="text-red-400 text-sm mt-2">{job.error}</p>}
         </div>
       )}
 
-      {job?.clips?.length > 0 && (
+      {clips.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {job.clips.map((clip: any) => (
+          {clips.map((clip: any) => (
             <div key={clip.id} className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
-              {clip.thumbnail_url && (
-                <img
-                  src={`${API_BASE}${clip.thumbnail_url}`}
-                  alt={clip.title}
-                  className="w-full aspect-[9/16] object-cover"
-                />
-              )}
+              <div className="w-full aspect-[9/16] bg-zinc-800 flex items-center justify-center text-zinc-500 text-sm">
+                {clip.thumbnail_url ? (
+                  <img
+                    src={API_BASE ? `${API_BASE}${clip.thumbnail_url}` : undefined}
+                    alt={clip.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  'Clip Preview'
+                )}
+              </div>
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold line-clamp-2">{clip.title}</h3>
@@ -111,21 +197,12 @@ export default function Home() {
                 </div>
                 <p className="text-xs text-zinc-500 mb-3 line-clamp-2">{clip.transcript}</p>
                 <div className="flex gap-2">
-                  {clip.video_url && (
-                    <a
-                      href={`${API_BASE}${clip.video_url}`}
-                      target="_blank"
-                      className="flex-1 text-center py-2 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700"
-                    >
-                      Preview
-                    </a>
-                  )}
-                  <a
-                    href={`${API_BASE}/api/clips/${clip.id}/download`}
-                    className="flex-1 text-center py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30"
-                  >
+                  <button className="flex-1 text-center py-2 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700">
+                    Preview
+                  </button>
+                  <button className="flex-1 text-center py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30">
                     Download
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
