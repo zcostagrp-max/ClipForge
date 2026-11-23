@@ -4,6 +4,8 @@ from datetime import datetime
 
 class JobCreate(BaseModel):
     url: str
+    target_duration: int = 30  # 10, 20, 30, 45, 60
+    quality: str = "1080p"     # "720p" or "1080p"
 
 class ClipResponse(BaseModel):
     id: str
