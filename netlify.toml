@@ -1,0 +1,12 @@
+# Root-level Netlify config (use this if you deploy the whole repo)
+# Sets the base directory to the Next.js frontend
+
+[build]
+  base = "frontend"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

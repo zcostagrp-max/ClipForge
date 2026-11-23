@@ -1,9 +1,20 @@
+# Netlify config for ClipForge frontend
+# Base directory must be set to "frontend" in the Netlify UI
+# OR use this file from the frontend folder
+
 [build]
   command = "npm run build"
-  publish = ".next"
+  # Do NOT set publish here — @netlify/plugin-nextjs manages it
 
 [build.environment]
   NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Catch-all redirect so client-side routes work (safety net)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
