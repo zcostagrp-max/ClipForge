@@ -3,90 +3,62 @@
 import { useState, useEffect, useRef } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+const SAMPLE = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 
 const DEMO_CLIPS = [
-  {
-    id: 'demo-1',
-    title: 'Why most people stay broke',
-    virality_score: 94,
-    transcript: 'The real reason isn\'t what you think. Most people focus on the wrong things and miss the leverage points that actually move the needle.',
-    start: 124,
-    end: 167,
-    video_url: '/clips/clip1.mp4',
-    thumbnail_url: '',
-  },
-  {
-    id: 'demo-2',
-    title: 'The secret nobody talks about',
-    virality_score: 87,
-    transcript: 'Here\'s what actually works when everyone else is doing the opposite. This one shift changes the entire outcome.',
-    start: 312,
-    end: 348,
-    video_url: '/clips/clip2.mp4',
-    thumbnail_url: '',
-  },
-  {
-    id: 'demo-3',
-    title: 'This changed everything for me',
-    virality_score: 91,
-    transcript: 'I tried this for 30 days and the results were insane. Most people quit before they see the compounding effect.',
-    start: 45,
-    end: 89,
-    video_url: '/clips/clip3.mp4',
-    thumbnail_url: '',
-  },
+  { id: 'demo-1', title: 'Why most people stay broke', virality_score: 94, transcript: 'The real reason isn\'t what you think. Most people focus on the wrong things and miss the leverage points that actually move the needle.', start: 124, end: 167, video_url: SAMPLE },
+  { id: 'demo-2', title: 'The secret nobody talks about', virality_score: 87, transcript: 'Here\'s what actually works when everyone else is doing the opposite. This one shift changes the entire outcome.', start: 312, end: 348, video_url: SAMPLE },
+  { id: 'demo-3', title: 'This changed everything for me', virality_score: 91, transcript: 'I tried this for 30 days and the results were insane. Most people quit before they see the compounding effect.', start: 45, end: 89, video_url: SAMPLE },
 ];
 
-function ClipCard({ clip, apiBase }: { clip: any; apiBase: string }) {
+function ClipCard({ clip }: { clip: any }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  const videoSrc = clip.video_url
-    ? (clip.video_url.startsWith('http') ? clip.video_url : clip.video_url)
-    : null;
+  const videoSrc = clip.video_url || null;
 
   const handlePreview = () => {
     setShowPlayer(true);
     setTimeout(() => {
-      videoRef.current?.play().catch(() => {});
-      setPlaying(true);
-    }, 50);
+      const v = videoRef.current;
+      if (v) {
+        v.play().then(() => setPlaying(true)).catch(() => {});
+      }
+    }, 100);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!videoSrc) return;
-    const a = document.createElement('a');
-    a.href = videoSrc;
-    a.download = `${(clip.title || 'clip').slice(0, 40)}.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    setDownloading(true);
+    try {
+      const res = await fetch(videoSrc);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(clip.title || 'clip').slice(0, 40)}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      window.open(videoSrc, '_blank');
+    }
+    setDownloading(false);
   };
 
   return (
     <div className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
       <div className="relative w-full aspect-[9/16] bg-zinc-800">
         {showPlayer && videoSrc ? (
-          <video
-            ref={videoRef}
-            src={videoSrc}
-            className="w-full h-full object-cover"
-            controls
-            playsInline
-            onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-          />
+          <video ref={videoRef} src={videoSrc} className="w-full h-full object-cover" controls playsInline crossOrigin="anonymous" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm">
-            Clip Preview
-          </div>
+          <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm">Clip Preview</div>
         )}
         {!showPlayer && videoSrc && (
-          <button
-            onClick={handlePreview}
-            className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition"
-          >
+          <button onClick={handlePreview} className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition">
             <span className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center text-2xl">▶</span>
           </button>
         )}
@@ -98,12 +70,8 @@ function ClipCard({ clip, apiBase }: { clip: any; apiBase: string }) {
         </div>
         <p className="text-xs text-zinc-500 mb-3 line-clamp-3">{clip.transcript}</p>
         <div className="flex gap-2">
-          <button onClick={handlePreview} className="flex-1 text-center py-2 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700">
-            {playing ? 'Playing' : 'Preview'}
-          </button>
-          <button onClick={handleDownload} className="flex-1 text-center py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30">
-            Download
-          </button>
+          <button onClick={handlePreview} className="flex-1 text-center py-2 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700">{playing ? 'Playing' : 'Preview'}</button>
+          <button onClick={handleDownload} disabled={downloading} className="flex-1 text-center py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30 disabled:opacity-50">{downloading ? 'Saving...' : 'Download'}</button>
         </div>
       </div>
     </div>
@@ -221,7 +189,7 @@ export default function Home() {
       )}
       {clips.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {clips.map((clip: any) => <ClipCard key={clip.id} clip={clip} apiBase={API_BASE} />)}
+          {clips.map((clip: any) => <ClipCard key={clip.id} clip={clip} />)}
         </div>
       )}
     </div>
