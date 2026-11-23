@@ -1,7 +1,7 @@
-# Netlify config (also present in root for clarity)
+# Frontend Netlify config
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "out"
 
 [build.environment]
   NODE_VERSION = "20"
