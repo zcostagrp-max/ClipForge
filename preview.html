@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClipForge - AI Video Clipping</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #09090b; color: #f4f4f5; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 py-10">
+    <header class="text-center mb-12">
+      <h1 class="text-5xl font-bold tracking-tight bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
+        ClipForge
+      </h1>
+      <p class="text-zinc-400 mt-3 text-lg">Paste any video URL → get viral short clips with captions</p>
+    </header>
+
+    <form class="mb-10">
+      <div class="flex gap-3 max-w-2xl mx-auto">
+        <input
+          type="url"
+          placeholder="https://youtube.com/watch?v=... or TikTok, Instagram, direct MP4"
+          class="flex-1 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 focus:border-orange-500 outline-none text-white"
+          value="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        />
+        <button type="button" class="px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 font-semibold transition">
+          Generate Clips
+        </button>
+      </div>
+    </form>
+
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm text-zinc-400">Rendering clips</span>
+        <span class="text-sm font-mono">82%</span>
+      </div>
+      <div class="w-full bg-zinc-800 rounded-full h-2">
+        <div class="bg-gradient-to-r from-orange-500 to-pink-500 h-2 rounded-full" style="width: 82%"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
