@@ -1,0 +1,10 @@
+# .dockerignore for Fly builds
+.git
+frontend
+node_modules
+**/__pycache__
+**/*.pyc
+.env
+*.db
+storage
+downloads
