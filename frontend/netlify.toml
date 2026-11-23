@@ -1,5 +1,6 @@
 # Netlify configuration for ClipForge
 # In Netlify UI: Base directory = frontend
+# Netlify auto-detects Next.js — no need to install the plugin package
 
 [build]
   command = "npm run build"
@@ -7,6 +8,3 @@
 
 [build.environment]
   NODE_VERSION = "20"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
