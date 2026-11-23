@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -9,27 +9,119 @@ const DEMO_CLIPS = [
     id: 'demo-1',
     title: 'Why most people stay broke',
     virality_score: 94,
-    transcript: 'The real reason isn\'t what you think. Most people focus on the wrong things...',
+    transcript: 'The real reason isn\'t what you think. Most people focus on the wrong things and miss the leverage points that actually move the needle.',
     start: 124,
     end: 167,
+    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    thumbnail_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg',
   },
   {
     id: 'demo-2',
     title: 'The secret nobody talks about',
     virality_score: 87,
-    transcript: 'Here\'s what actually works when everyone else is doing the opposite...',
+    transcript: 'Here\'s what actually works when everyone else is doing the opposite. This one shift changes the entire outcome.',
     start: 312,
     end: 348,
+    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    thumbnail_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg',
   },
   {
     id: 'demo-3',
     title: 'This changed everything for me',
     virality_score: 91,
-    transcript: 'I tried this for 30 days and the results were insane...',
+    transcript: 'I tried this for 30 days and the results were insane. Most people quit before they see the compounding effect.',
     start: 45,
     end: 89,
+    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    thumbnail_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg',
   },
 ];
+
+function ClipCard({ clip, apiBase }: { clip: any; apiBase: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
+
+  const videoSrc = clip.video_url
+    ? (clip.video_url.startsWith('http') ? clip.video_url : `${apiBase}${clip.video_url}`)
+    : null;
+
+  const thumbSrc = clip.thumbnail_url
+    ? (clip.thumbnail_url.startsWith('http') ? clip.thumbnail_url : `${apiBase}${clip.thumbnail_url}`)
+    : null;
+
+  const handlePreview = () => {
+    setShowPlayer(true);
+    setTimeout(() => {
+      videoRef.current?.play().catch(() => {});
+      setPlaying(true);
+    }, 50);
+  };
+
+  const handleDownload = () => {
+    if (!videoSrc) return;
+    const a = document.createElement('a');
+    a.href = videoSrc;
+    a.download = `${clip.title?.slice(0, 30) || 'clip'}.mp4`;
+    a.target = '_blank';
+    a.click();
+  };
+
+  return (
+    <div className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+      <div className="relative w-full aspect-[9/16] bg-zinc-800">
+        {showPlayer && videoSrc ? (
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            className="w-full h-full object-cover"
+            controls
+            playsInline
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+          />
+        ) : thumbSrc ? (
+          <img src={thumbSrc} alt={clip.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm">
+            Clip Preview
+          </div>
+        )}
+        {!showPlayer && videoSrc && (
+          <button
+            onClick={handlePreview}
+            className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition"
+          >
+            <span className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center text-2xl">
+              ▶
+            </span>
+          </button>
+        )}
+      </div>
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2 gap-2">
+          <h3 className="font-semibold line-clamp-2">{clip.title}</h3>
+          <span className="text-orange-400 font-bold text-lg shrink-0">{clip.virality_score}</span>
+        </div>
+        <p className="text-xs text-zinc-500 mb-3 line-clamp-3">{clip.transcript}</p>
+        <div className="flex gap-2">
+          <button
+            onClick={handlePreview}
+            className="flex-1 text-center py-2 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700"
+          >
+            {playing ? 'Playing' : 'Preview'}
+          </button>
+          <button
+            onClick={handleDownload}
+            className="flex-1 text-center py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30"
+          >
+            Download
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -91,7 +183,7 @@ export default function Home() {
         });
         setLoading(false);
       }
-    }, 800);
+    }, 700);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,7 +227,7 @@ export default function Home() {
         </p>
         {demoMode && (
           <p className="text-xs text-zinc-500 mt-2">
-            Demo mode — connect a backend via NEXT_PUBLIC_API_URL for real processing
+            Demo mode with playable previews — set NEXT_PUBLIC_API_URL for real clipping
           </p>
         )}
       </header>
@@ -178,34 +270,7 @@ export default function Home() {
       {clips.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {clips.map((clip: any) => (
-            <div key={clip.id} className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
-              <div className="w-full aspect-[9/16] bg-zinc-800 flex items-center justify-center text-zinc-500 text-sm">
-                {clip.thumbnail_url ? (
-                  <img
-                    src={API_BASE ? `${API_BASE}${clip.thumbnail_url}` : undefined}
-                    alt={clip.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  'Clip Preview'
-                )}
-              </div>
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold line-clamp-2">{clip.title}</h3>
-                  <span className="text-orange-400 font-bold text-lg">{clip.virality_score}</span>
-                </div>
-                <p className="text-xs text-zinc-500 mb-3 line-clamp-2">{clip.transcript}</p>
-                <div className="flex gap-2">
-                  <button className="flex-1 text-center py-2 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700">
-                    Preview
-                  </button>
-                  <button className="flex-1 text-center py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30">
-                    Download
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ClipCard key={clip.id} clip={clip} apiBase={API_BASE} />
           ))}
         </div>
       )}
