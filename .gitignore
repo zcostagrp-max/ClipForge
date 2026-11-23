@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+*.db
+
+# Node
+node_modules/
+.next/
+out/
+
+# Storage
+storage/
+downloads/
+
+# OS
+.DS_Store
+Thumbs.db
